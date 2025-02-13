@@ -1,0 +1,482 @@
+import java.util.Scanner;
+import java.util.InputMismatchException;
+import java.util.Iterator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.function.Predicate;
+
+// Custom Exception for Invalid Age
+class InvalidAgeException extends Exception {
+	public InvalidAgeException(String message) {
+		super(message);
+	}
+}
+
+// Custom Exception for Missing CEO
+class MissingCEOException extends RuntimeException {
+	public MissingCEOException(String message) {
+		super(message);
+	}
+}
+
+class CEO {
+	private static CEO instance; // Singleton instance
+	private String name;
+
+	private CEO(String name) {
+		this.name = name;
+	}
+
+	public static CEO getInstance(String name) {
+		if (instance == null) {
+			instance = new CEO(name);
+		}
+		return instance;
+	}
+
+	public static CEO getInstance() throws MissingCEOException {
+		if (instance == null) {
+			throw new MissingCEOException("CEO must be created before performing other operations.");
+		}
+		return instance;
+	}
+
+	public void display() {
+		System.out.println("CEO Name: " + name);
+	}
+}
+
+// Employee Class Definitions
+abstract class Employee {
+	int id;
+	String name;
+	int age;
+	double salary;
+	String designation;
+
+	Employee(int id, String name, int age, double salary, String designation) {
+		this.id = id;
+		this.name = name;
+		this.age = age;
+		this.salary = salary;
+		this.designation = designation;
+	}
+
+	void display() {
+		System.out.println("ID: " + id);
+		System.out.println("Name: " + name);
+		System.out.println("Age: " + age);
+		System.out.println("Salary: " + salary);
+		System.out.println("Designation: " + designation);
+	}
+
+	abstract void raiseSalary();
+}
+
+final class Clerk extends Employee {
+	Clerk(int id, String name, int age, double salary) {
+		super(id, name, age, salary, "Clerk");
+	}
+
+	@Override
+	void raiseSalary() {
+		salary += 2000;
+	}
+}
+
+final class Programmer extends Employee {
+	Programmer(int id, String name, int age, double salary) {
+		super(id, name, age, salary, "Programmer");
+	}
+
+	@Override
+	void raiseSalary() {
+		salary += 5000;
+	}
+}
+
+final class Manager extends Employee {
+	Manager(int id, String name, int age, double salary) {
+		super(id, name, age, salary, "Manager");
+	}
+
+	@Override
+	void raiseSalary() {
+		salary += 10000;
+	}
+}
+
+// Factory Design Pattern for Employee Creation
+abstract class EmployeeFactory {
+	public static Employee createEmployee(String designation, int id, String name, int age, double salary) {
+		return switch (designation) {
+		case "Clerk" -> new Clerk(id, name, age, salary);
+		case "Programmer" -> new Programmer(id, name, age, salary);
+		case "Manager" -> new Manager(id, name, age, salary);
+		default -> throw new IllegalArgumentException("Invalid Designation");
+		};
+	}
+}
+
+// Custom Iterator for Employee Array
+class EmployeeIterator implements Iterator<Employee> {
+	private final Employee[] employees;
+	private int position;
+
+	EmployeeIterator(Employee[] employees, int employeeCount) {
+		this.employees = new Employee[employeeCount];
+		System.arraycopy(employees, 0, this.employees, 0, employeeCount);
+		this.position = 0;
+	}
+
+	@Override
+	public boolean hasNext() {
+		return position < employees.length && employees[position] != null;
+	}
+
+	@Override
+	public Employee next() {
+		return employees[position++];
+	}
+}
+
+public class EmployeeManagement {
+
+	static LinkedHashMap<Integer, Employee> employees = new LinkedHashMap<>();
+
+	public static void main(String[] args) {
+		CEO ceo = null;
+
+		// Ensure CEO is created first
+		while (ceo == null) {
+			System.out.println("CEO must be created before performing other operations.");
+			System.out.println("1. Create CEO");
+			System.out.println("7. Exit");
+			System.out.print("Enter choice: ");
+			int choice = Menu.readChoice(7);
+
+			if (choice == 1) {
+				ceo = createCEO();
+			} else if (choice == 7) {
+				System.out.println("Exiting...");
+				return;
+			} else {
+				System.out.println("Invalid choice. You must create the CEO first.");
+			}
+		}
+
+		// Main menu after CEO is created
+		while (true) {
+			System.out.println("1. Create CEO");
+			System.out.println("2. Create Employee");
+			System.out.println("3. Display Employees");
+			System.out.println("4. Raise Salaries");
+			System.out.println("5. Remove Employee");
+			System.out.println("6. Display CEO");
+			System.out.println("7. Search Employee by ID");
+			System.out.println("8. Exit");
+			System.out.print("Enter choice: ");
+			int choice = Menu.readChoice(8);
+			System.out.println("-------------------------");
+
+			switch (choice) {
+			case 1 -> System.out.println("Error: CEO already exists!");
+			case 2 -> createEmployee();
+			case 3 -> displayEmployees();
+			case 4 -> raiseSalaries();
+			case 5 -> removeEmployee();
+			case 6 -> ceo.display(); // Display CEO details
+			case 7 -> searchEmployee(); // Search by ID
+			case 8 -> {
+				System.out.println("Exiting...");
+				return;
+			}
+			default -> System.out.println("Invalid choice. Please try again.");
+			}
+		}
+	}
+
+	static CEO createCEO() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.print("Enter CEO Name: ");
+		String name = scanner.nextLine();
+		return CEO.getInstance(name); // Create the CEO
+	}
+
+	static void createEmployee() {
+		int id = IDReader.readID(employees); // Updated to check HashMap for uniqueness
+		String name = NameReader.readName();
+		int age = AgeReader.readAge(21, 60);
+		double salary = SalaryReader.readSalary();
+		String designation = DesignationReader.readDesignation();
+
+		Employee employee = EmployeeFactory.createEmployee(designation, id, name, age, salary);
+		employees.put(id, employee); // Store in HashMap
+		System.out.println("Employee added successfully!");
+	}
+
+	static void displayEmployees() {
+		if (employees.isEmpty()) {
+			System.out.println("No employees to display.");
+			return;
+		}
+
+		// Display submenu for sorting options
+		while (true) {
+			System.out.println("Choose display option:");
+			System.out.println("1. Sort by ID");
+			System.out.println("2. Sort by Name");
+			System.out.println("3. Sort by Age");
+			System.out.println("4. Sort by Salary");
+			System.out.println("5. Sort by Designation");
+			System.out.println("6. Display as Entered");
+			System.out.println("7. Exit to main menu");
+			System.out.print("Enter choice: ");
+
+			int choice = Menu.readChoice(7);
+
+			// Create a list of employees for sorting or use LinkedHashMap values directly
+			List<Employee> sortedEmployees = new ArrayList<>(employees.values());
+			switch (choice) {
+			case 1 -> sortedEmployees.sort(Comparator.comparingInt(e -> e.id));
+			case 2 -> sortedEmployees.sort(Comparator.comparing(e -> e.name));
+			case 3 -> sortedEmployees.sort(Comparator.comparingInt(e -> e.age));
+			case 4 -> sortedEmployees.sort(Comparator.comparingDouble(e -> e.salary));
+			case 5 -> sortedEmployees.sort(Comparator.comparing(e -> e.designation));
+			case 6 -> {
+				System.out.println("Employee Details (As Entered):");
+				for (Employee employee : employees.values()) { // Direct iteration
+					employee.display();
+					System.out.println("----------------");
+				}
+				continue; // Loop back to the menu
+			}
+			case 7 -> {
+				System.out.println("Returning to main menu...");
+				return;
+			}
+			default -> {
+				System.out.println("Invalid choice. Please try again.");
+				continue;
+			}
+			}
+
+			// Display the sorted list of employees
+			System.out.println("Employee Details (Sorted):");
+			for (Employee employee : sortedEmployees) {
+				employee.display();
+				System.out.println("----------------");
+			}
+		}
+	}
+
+	static void raiseSalaries() {
+		if (employees.isEmpty()) {
+			System.out.println("No employees to raise salaries.");
+		} else {
+			for (Employee employee : employees.values()) {
+				employee.raiseSalary();
+			}
+			System.out.println("Salaries raised for all employees.");
+		}
+	}
+
+	static void removeEmployee() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.print("Enter ID of the employee to remove: ");
+		int id = scanner.nextInt();
+
+		if (employees.remove(id) != null) {
+			System.out.println("Employee removed successfully.");
+		} else {
+			System.out.println("No employee found with ID " + id + ".");
+		}
+	}
+
+	static void searchEmployee() {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			System.out.println("Search Options:");
+			System.out.println("1. Search by ID");
+			System.out.println("2. Search by Designation");
+			System.out.println("3. Search by Name");
+			System.out.println("4. Return to Main Menu");
+			System.out.print("Enter choice: ");
+
+			int choice = Menu.readChoice(4);
+			System.out.println("-------------------------");
+
+			switch (choice) {
+			case 1 -> {
+				System.out.print("Enter Employee ID: ");
+				int id = scanner.nextInt();
+				Employee employee = employees.get(id);
+				if (employee != null) {
+					employee.display();
+				} else {
+					System.out.println("No employee found with ID " + id + ".");
+				}
+			}
+			case 2 -> {
+				System.out.print("Enter Designation (Clerk/Programmer/Manager): ");
+				String designation = scanner.next();
+				List<Employee> employeesByDesignation = CollectionUtils.searchByCriteria(employees.values(),
+						e -> e.designation.equalsIgnoreCase(designation));
+				if (employeesByDesignation.isEmpty()) {
+					System.out.println("No employees found with designation: " + designation + ".");
+				} else {
+					System.out.println("Employees with designation " + designation + ":");
+					for (Employee e : employeesByDesignation) {
+						e.display();
+						System.out.println("----------------");
+					}
+				}
+			}
+			case 3 -> {
+				System.out.print("Enter Name: ");
+				scanner.nextLine(); // Consume newline
+				String name = scanner.nextLine();
+				List<Employee> employeesByName = CollectionUtils.searchByCriteria(employees.values(),
+						e -> e.name.equalsIgnoreCase(name));
+				if (employeesByName.isEmpty()) {
+					System.out.println("No employees found with name: " + name + ".");
+				} else {
+					System.out.println("Employees with name " + name + ":");
+					for (Employee e : employeesByName) {
+						e.display();
+						System.out.println("----------------");
+					}
+				}
+			}
+			case 4 -> {
+				System.out.println("Returning to Main Menu...");
+				return;
+			}
+			default -> System.out.println("Invalid choice. Please try again.");
+			}
+		}
+	}
+}
+
+// Utility Classes
+class Menu {
+	public static int readChoice(int maxChoice) {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			try {
+				int choice = scanner.nextInt();
+				if (choice < 1 || choice > maxChoice) {
+					throw new InvalidChoiceException();
+				}
+				return choice;
+			} catch (InputMismatchException e) {
+				System.out.println("Please enter a valid number.");
+				scanner.nextLine(); // Clear invalid input
+			} catch (InvalidChoiceException e) {
+				e.displayMessage(maxChoice);
+			}
+		}
+	}
+}
+
+class InvalidChoiceException extends RuntimeException {
+	public void displayMessage(int maxChoice) {
+		System.out.println("Invalid choice. Please select a number between 1 and " + maxChoice + ".");
+	}
+}
+
+class IDReader {
+	public static int readID(LinkedHashMap<Integer, Employee> employees) {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			System.out.print("Enter Employee ID: ");
+			int id = scanner.nextInt();
+			if (employees.containsKey(id)) {
+				System.out.println("ID already exists. Please enter a unique ID.");
+			} else {
+				return id;
+			}
+		}
+	}
+}
+
+class NameReader {
+	public static String readName() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.print("Enter Name: ");
+		return scanner.nextLine();
+	}
+}
+
+class AgeReader {
+	public static int readAge(int minAge, int maxAge) {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			try {
+				System.out.print("Enter Age: ");
+				int age = scanner.nextInt();
+				if (age < minAge || age > maxAge) {
+					throw new InvalidAgeException("Age must be between " + minAge + " and " + maxAge + ".");
+				}
+				return age;
+			} catch (InputMismatchException e) {
+				System.out.println("Please enter a valid number.");
+				scanner.nextLine(); // Clear invalid input
+			} catch (InvalidAgeException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
+}
+
+class SalaryReader {
+	public static double readSalary() {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			try {
+				System.out.print("Enter Salary: ");
+				double salary = scanner.nextDouble();
+				if (salary <= 0) {
+					throw new IllegalArgumentException("Salary must be greater than 0.");
+				}
+				return salary;
+			} catch (InputMismatchException e) {
+				System.out.println("Please enter a valid number.");
+				scanner.nextLine(); // Clear invalid input
+			} catch (IllegalArgumentException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
+}
+
+class DesignationReader {
+	public static String readDesignation() {
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			System.out.print("Enter Designation (Clerk/Programmer/Manager): ");
+			String designation = scanner.nextLine();
+			if (designation.equalsIgnoreCase("Clerk") || designation.equalsIgnoreCase("Programmer")
+					|| designation.equalsIgnoreCase("Manager")) {
+				return designation;
+			} else {
+				System.out.println("Invalid designation. Please choose from Clerk, Programmer, or Manager.");
+			}
+		}
+	}
+}
+
+class CollectionUtils {
+	public static List<Employee> searchByCriteria(List<Employee> employees, Predicate<Employee> criteria) {
+		List<Employee> result = new ArrayList<>();
+		for (Employee e : employees) {
+			if (criteria.test(e)) {
+				result.add(e);
+			}
+		}
+		return result;
+	}
+}

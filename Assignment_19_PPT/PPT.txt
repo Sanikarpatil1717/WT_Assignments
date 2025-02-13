@@ -1,0 +1,63 @@
+Semi structured data using JSON
+==========================================
+
+1)Semi Structured data definition ->
+
+-Semi-structured data is a type of data that does not follow a strict relational schema like structured data (tables with fixed columns)
+
+- combines characteristics of both structured and unstructured data
+
+---------------------------------------------------------------------------------------------------------------------
+
+2) Characteristics of Semi-Structured Data ->
+
+-Flexible schema : The data can have different structures across records.
+
+-Can have missing or optional fields: Unlike structured data, fields may be missing or optional.
+
+-Self-descriptive format(data itself contains all the necessary information to understand its structure without requiring an external schema )
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+2)Example
+
+1. JSON in Legal Documents:
+
+-Problem: Traditional databases require a strict schema, but legal documents often contain varied and flexible information.
+-Solution: JSON allows flexible storage with nested data, making it easier to handle complex and varying document structures.
+
+
+-Imagine we have a rental agreement between two parties. Storing this in a traditional database would require multiple relational tables (e.g., Parties, Contract_Terms, Dates). With JSON, we can store all this information in a single, flexible structure:
+
+{
+  "document_id": "A123",
+  "title": "Rental Agreement",
+  "parties_involved": [
+    {"name": "A P", "role": "Tenant"},
+    {"name": "S P", "role": "Landlord"}
+  ],
+  "start_date": "2024-02-01",
+  "termination_date": "2025-02-01",
+  "terms": {
+    "rent": 1200,
+    "currency": "USD",
+    "payment_due": "1st of each month",
+    "penalty_fee": {
+      "amount": 50,
+      "reason": "Late Payment"
+    }
+  },
+  "signatures": {
+    "tenant": "A P(Signed)",
+    "landlord": "S P (Signed)"
+  }
+}
+
+
+-----------------------------------------------------------------------------------------------------
+
+4)Benefits of JSON in Databases:
+
+-Schema flexibility & scalability: JSON allows easy changes to data structure without needing to alter the entire schema.
+-Easy integration with APIs: JSON is commonly used for data exchange in web APIs.
+-Ideal for semi-structured legal & business data
